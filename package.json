@@ -21,6 +21,10 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "body-parser": "^1.9.2",
+    "express": "^4.9.8",
+    "influx": "^2.1.0",
+    "underscore": "^1.7.0"
   },
   "peerDependencies": {
     "seneca": "*"

@@ -1,0 +1,115 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(init);
+      var chartData;
+      var data;
+      function init() {
+        //chartData = getData();
+        //console.log(">>>>> new data", chartData);
+
+        //data = google.visualization.arrayToDataTable(chartData);
+        data = new google.visualization.DataTable();
+        data.addColumn('string', 'Action');
+        data.addColumn('number', 'Count');
+       // for(var i = 0; i<chartData.length;i++){
+       //   data.addRow([chartData[i][0], chartData[i][1]]);
+       // }
+        drawChart();
+      }
+      function drawChart() {
+        var options = {
+          title: 'Seneca Action Statistics',
+          hAxis: {title: 'Action', titleTextStyle: {color: 'red'}},
+          animation:{
+            duration: 1000,
+            easing: 'out',
+          },
+         vAxis: {minValue:0, maxValue:50}
+        };
+
+        var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      }
+
+      function getData() {
+        var result = [];
+        //var actionName = ['Action Name', 'Count'];
+        //result.push(actionName);
+        $.ajax({
+          url: "http://localhost:3000/data",
+          type: 'get',
+          dataType: 'json',
+          async: false
+        }).done(function(data) {
+            console.log(">>>>> data", JSON.stringify(data));
+            var response = data.answer;
+            for(var i = 0; i < response.length; i++) {
+              var roleData = [];
+              var role  = response[i].role;
+              var cmd   = response[i].cmd;
+              var count = response[i].count;
+              roleData.push(role+"-"+cmd); 
+              roleData.push(count);
+              result.push(roleData);
+            }
+        }); 
+        return result;
+      }
+
+      function updateGoogleChart(newData) {       
+        console.log(">>>>> new data", newData);
+        //data = new google.visualization.DataTable();
+        //data.addColumn('string', 'Action');
+        //data.addColumn('number', 'Count');
+
+        for(var i = 0; i<newData.length;i++){
+          data.addRow([newData[i][0], newData[i][1]]);
+        }
+        drawChart();
+      }
+
+      function queryInfluxDB(pattern) {
+        var result = [];
+        $.ajax({
+          url: "http://localhost:3000/queryInflux",
+          type: 'POST',
+          data: pattern,
+          async: true
+        }).done(function(data) {
+            var response = data.answer;
+            for(var i = 0; i < response.length; i++) {
+              var roleData = [];
+              var role  = response[i].role;
+              var cmd   = response[i].cmd;
+              var count = response[i].count;
+              roleData.push(role+"-"+cmd); 
+              roleData.push(count);
+              result.push(roleData);
+              updateGoogleChart(result);
+            }
+        }); 
+      }
+
+      $( document ).ready(function() {
+        console.log( "ready!" );
+        $( "#pattern_form" ).submit(function( event ) {
+          var pattern = $('#pattern_text').val();
+          queryInfluxDB(pattern);
+          event.preventDefault();
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div id="chart_div" style="width: 900px; height: 500px;"></div>
+  <form id="pattern_form">
+    <label>Please enter a seneca action pattern using the following format, role:cmd</label>
+    <input id="pattern_text" type="text" name="pattern">
+    <input type="submit" value="Submit">
+  </form>
+  </body>
+</html>
