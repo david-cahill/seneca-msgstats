@@ -7,6 +7,8 @@ var seneca3 = require('seneca')();
 var express = require('express')
 var bodyParser = require('body-parser')
 var influx = require('influx');
+var connect = require('connect');
+var qs = require('qs');
 
 module.exports = function( options ) {
   var seneca = this;
@@ -14,7 +16,8 @@ module.exports = function( options ) {
   
   options = seneca.util.deepextend({
   	capture:'role:*',
-    format:['role']
+    format:['role'],
+    influxOptions:{}
   }, options);
 
   //-----Server Section---//
@@ -22,16 +25,16 @@ module.exports = function( options ) {
     //cluster configuration
     hosts : [
       {
-        host : 'localhost',
-        port : 8086 //optional. default 8086
+        host : options.influxOpts.host,
+        port : options.influxOpts.port //optional. default 8086
       }
     ],
     // or single-host configuration
-    host : 'localhost',
-    port : 8086, // optional, default 8086
-    username : 'root',
-    password : 'root',
-    database : 'test_db2'
+    host : options.influxOpts.host,
+    port : options.influxOpts.port,// optional, default 8086
+    username : options.influxOpts.username,
+    password : options.influxOpts.password,
+    database : options.influxOpts.database
   });
 
   function sendServerData() {
@@ -66,13 +69,13 @@ module.exports = function( options ) {
 
   seneca.add( {role:'influxdb', cmd:'getData'}, function(args,callback) {
     getLatestChartData({fieldName:args.fieldName, seriesName:args.seriesName}, function(err,response) {
-      callback(null,{answer:response})
+      callback(null,response);
     });
   });
 
   seneca.add( {role:'influxdb', cmd:'queryData'}, function(args,callback) {
     queryChartDataPattern({pattern:args.pattern, seriesName:args.seriesName}, function(err,response) {
-      callback(null,{answer:response})
+      callback(null,response)
     });
   });
 
@@ -200,8 +203,8 @@ module.exports = function( options ) {
       var containsRole = _.contains(countedRoles,points[i][patternIndex]);
 
       if(!containsRole) {
-        result.push({"pattern":points[i][patternIndex],
-                     "count":count
+        result.push({pattern:points[i][patternIndex],
+                     count:count
                     });
         countedRoles.push(points[i][patternIndex]);
       } else {
@@ -279,51 +282,35 @@ module.exports = function( options ) {
 
   //-----API Section------//
   var data;
-  function getData() {
+  function getData(cb) {
     seneca.act( {role:'influxdb', cmd:'getData', fieldName:'*', seriesName:'actions'}, function(err,result){
-      data = result;
+      cb(null,result);
     });
   }
 
   function queryInflux(pattern, cb) {
-    var response = 'test';
-    console.log("************ Seneca.act pattern = " + JSON.stringify(pattern));
     seneca.act( {role:'influxdb', cmd:'queryData', pattern:pattern, seriesName:'actions'}, function(err,result){
-      response = result;
-      cb(null, response);
+      cb(null, result);
     });
   }
 
   var app = express();
-  app.use('/', express.static(__dirname));
-  app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
-    extended: true
-  })); 
-  
-  setInterval(getData, 2000);
+  app.use(seneca.export('web'));
+  seneca.act('role:web',{use:function(req,res,next) {
 
-  app.get('/data', function(req, res){
-    res.send(data); //replace with your data here
-  });
+    if(0 == req.url.indexOf('/influxdb/getData')) {
+      var result = getData(function(err, response) {
+        res.send('jsonPCallback('+JSON.stringify(response)+');');
+      });
+    } else if(0 == req.url.indexOf('/influxdb/queryInflux')){
+      var result = queryInflux(req.param('actions'), function(err, response) {
+        res.send('jsonPCallback('+JSON.stringify(response)+');');
+      });
+    } else {
+      next()
+    }
 
-  app.get('/jsonpData', function(req, res){
-    res.send('jsonPCallback('+JSON.stringify(data)+');'); //replace with your data here
-  });
-
-  app.post('/queryInflux', function(req, res){
-    var response = queryInflux(req.body, function(err, result) {
-      res.send(result);
-    });   
-   
-  });
-
-  app.get('/jsonpQueryInflux', function(req, res){
-    console.log(req.param('actions'));
-    var response = queryInflux(req.param('actions'), function(err, result) {
-      res.send('jsonPCallback('+JSON.stringify(result)+');');
-    });   
-   
-  });
+  }});
 
   app.listen(3000);
   //----------End of API Section------//
