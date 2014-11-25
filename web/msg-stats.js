@@ -22,7 +22,6 @@
   } 
 
   var queryDataCallback = function(err, response) {
-    console.log("queryData callback ===" + response);
     updateGoogleChart(response);
   } 
 
@@ -68,10 +67,6 @@
     })
   }
 
-  function jsonPCallback() {
-    console.log("jsonp callback called:...");
-  }
-
   function queryInfluxDB(pattern,cb) {
     var result = [];
     $.ajax({
@@ -90,7 +85,6 @@
           roleData.push(pattern); 
           roleData.push(count);
           result.push(roleData);
-          //updateGoogleChart(result);
         }
         cb(null,result)
     }); 
