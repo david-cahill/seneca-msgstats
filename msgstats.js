@@ -1,25 +1,30 @@
-/* Copyright (c) 2014 Richard Rodger, MIT License */
+/* Copyright (c) 2013 Richard Rodger, MIT License */
 "use strict";
 
-var _ = require('underscore');
-var seneca2 = require('seneca')();
-var seneca3 = require('seneca')();
-var express = require('express')
-var bodyParser = require('body-parser')
-var influx = require('influx');
-var connect = require('connect');
-var qs = require('qs');
+var _                   = require('underscore')
+var connect             = require('connect')
+var serveStatic         = require('serve-static');
+var influx              = require('influx');
+var seneca2             = require('seneca')();
+var seneca3             = require('seneca')();
+
 
 module.exports = function( options ) {
-  var seneca = this;
-  var plugin = 'msgstats';
-  
-  options = seneca.util.deepextend({
-  	capture:'role:*',
-    format:['role'],
-    influxOptions:{}
-  }, options);
+  var seneca = this
+  var plugin = 'msgstats'
 
+
+  options = seneca.util.deepextend({
+    capture:'role:*',
+    format:['role'],
+    prefix:'/msgstats/',
+    contentprefix:'/msgstats',
+    stats: {
+      size:1024,
+      duration:60000,
+    },
+  },options)
+  
   //-----Server Section---//
   var client = influx({
     //cluster configuration
@@ -131,64 +136,6 @@ module.exports = function( options ) {
     });
   }
 
-  /*function parseInfluxPattern(data) {
-    var columns = data[0].columns;
-    var points  = data[0].points;
-    var patternIndex = columns.indexOf("pattern");
-
-    var result = [];
-    var count = 0;
-    var countedRoles = [];
-
-    for(var i = 0; i<points.length; i++) {
-      var containsRole = _.contains(countedRoles,points[i][patternIndex]);
-
-      if(!containsRole) {
-        result.push({"pattern":points[i][patternIndex]});
-        countedRoles.push(points[i][patternIndex]);
-    } else {
-          for(var j = 0; j < result.length; j++) {
-            if(result[j].pattern === points[i][patternIndex]) {
-              result[j].count++;
-            }
-          }
-      }
-
-  }*/
-
-  /*function parseInfluxData(data) {
-    var columns = data[0].columns;
-    var points  = data[0].points;
-    var roleIndex = columns.indexOf("role");
-    var cmdIndex  = columns.indexOf("plugin");
-
-    var result = [];
-    var count = 0;
-    var countedRoles = [];
-
-    for(var i = 0; i<points.length; i++) {
-
-      var containsRole = _.contains(countedRoles,points[i][roleIndex]+":"+points[i][cmdIndex]);
-
-      if(!containsRole) {
-        result.push({"role":points[i][roleIndex],
-                     "cmd" :points[i][cmdIndex],
-                     "count":count
-                    });
-        countedRoles.push(points[i][roleIndex]+":"+points[i][cmdIndex]);
-      } else {
-
-        for(var j = 0; j < result.length; j++) {
-          if(result[j].role === points[i][roleIndex] && result[j].cmd === points[i][cmdIndex]) {
-            result[j].count++;
-          }
-        }
-    }
-
-    }
-    return result;
-  }*/
-
   function parseInfluxDataV2(data) {
     var columns = data[0].columns;
     var points  = data[0].points;
@@ -219,39 +166,6 @@ module.exports = function( options ) {
     }
     return result;
   }
-
-
-  /*function captureAllMessages(args, done) {
-    console.log("*** capture all messages called");
-    console.log("Args =" + JSON.stringify(args));
-    console.log("**** Format = " + options.format);
-    var actions = options.format;
-    //var point = {'pattern':''};
-    var point = {};
-    var actionPairs = [];
-    //pattern = {role:}
-
-
-    for(var i = 0; i < actions.length; i++) {
-      actionPairs.push(actions[i]+':'+args[actions[i]]);
-    }
-
-    //for(var i = 0; i < actionPairs.length; i++) {
-    //  point['pattern'] = point['pattern'] + ' ' + (actionPairs[i]);
-    //}
-
-    for(var i = 0; i < actions.length; i++) {
-      point[actions[i]] = args[actions[i]];
-    }
-
-    console.log("***>>>>>>>>>>",point);
-    // send point to seneca host service
-    seneca2.client(4000).act({role:'data', cmd:'send', point:point, options:options}, function(err, result) {
-      console.log("****** data send result", result);
-    });
-
-    this.prior(args,done);
-  }*/
 
   function captureAllMessagesV2(args, done) {
     //Check seneca args and look for capture fields in options.format.
@@ -294,25 +208,52 @@ module.exports = function( options ) {
     });
   }
 
-  var app = express();
-  app.use(seneca.export('web'));
-  seneca.act('role:web',{use:function(req,res,next) {
+  var app = connect()
+  app.use(serveStatic(__dirname+'/web'))
+
+  var use = function(req,res,next){
+    if( 0===req.url.indexOf(options.contentprefix) ) {
+      if( 0 == req.url.indexOf(options.contentprefix+'/init.js') ) {
+        res.writeHead(200,{'Content-Type':'text/javascript'})
+        return res.end(initsrc+sourcelist.join('\n'));
+      }
+   
+      req.url = req.url.substring(options.contentprefix.length)
+      return app( req, res );
+    }
 
     if(0 == req.url.indexOf('/influxdb/getData')) {
       var result = getData(function(err, response) {
-        res.send('jsonPCallback('+JSON.stringify(response)+');');
+        res.send(response);
       });
     } else if(0 == req.url.indexOf('/influxdb/queryInflux')){
       var result = queryInflux(req.param('actions'), function(err, response) {
-        res.send('jsonPCallback('+JSON.stringify(response)+');');
+        res.send(response);
       });
-    } else {
-      next()
     }
 
-  }});
+    else return next();
+  }
 
-  app.listen(3000);
-  //----------End of API Section------//
-  return {name: plugin};
-};
+  seneca.add({init:plugin},function(args,done) {
+    var seneca = this
+
+    var config = {prefix:options.contentprefix}
+
+    seneca.act({role:'web',use:use, plugin:plugin,config:config})
+
+    seneca.act({role:'util',note:true,cmd:'push',key:'admin/units',value:{
+      unit:'msg-stats',
+      spec:{title:'Message Statistics',ng:{module:'senecaMsgStatsModule',directive:'seneca-msg-stats'}},
+      content:[
+        {type:'js',file:__dirname+'/web/msg-stats.js'}
+      ]
+    }})
+    done()
+  })
+
+
+  return {
+    name: plugin
+  }
+}
