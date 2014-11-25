@@ -17,7 +17,7 @@ module.exports = function( options ) {
     contentprefix:'/msgstats',
     influxOptions:{}
   },options)
-  
+
   seneca.use(collector,options.influxOpts);
 
   seneca.add({role: plugin, ping: true}, ping);
@@ -50,7 +50,25 @@ module.exports = function( options ) {
     this.prior(args, done);
   }
 
-  seneca.wrap(options.capture, captureAllMessagesV2);
+   function captureAllMessagesV3(args) {
+    //Check seneca args and look for capture fields in options.format.
+    var captureFields = options.format;
+    var point = {};
+    var meta  = args.meta$;
+    point['pattern'] = meta.pattern;
+
+    if(meta.pattern.indexOf('role:collector') === -1) {
+      console.log("**** Point To Send = ****" + JSON.stringify(point));
+      seneca.act({role:'collector', cmd:'send', point:point, options:options}, function(err, result) {
+        console.log("****** data send result", result);
+      });
+    }
+  }
+
+
+  //Capture all actions
+  //seneca.wrap(options.capture, captureAllMessagesV2);
+  seneca.sub({}, captureAllMessagesV3);
 
   //-----API Section------//
   var data;
@@ -109,7 +127,6 @@ module.exports = function( options ) {
     }})
     done()
   })
-
 
   return {
     name: plugin
