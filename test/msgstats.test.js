@@ -17,14 +17,4 @@ describe('msgstats', function() {
       done()
     })
   });
-
-  it('capture data',function(done){
-    seneca.act('role:msgstats,cmd:captureData',function(err,out){
-      if(err) return done(err);
-
-      assert.ok( out.now )
-      done()
-    })
-  });
-
 })

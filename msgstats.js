@@ -122,7 +122,8 @@ module.exports = function( options ) {
       unit:'msg-stats',
       spec:{title:'Message Statistics',ng:{module:'senecaMsgStatsModule',directive:'seneca-msg-stats'}},
       content:[
-        {type:'js',file:__dirname+'/web/msg-stats.js'}
+        {type:'js',file:__dirname+'/web/msg-stats.js'},
+        {type:'js',file:__dirname+'/web/angular-load.js'}
       ]
     }})
     done()

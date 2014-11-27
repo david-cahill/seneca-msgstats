@@ -5,15 +5,9 @@
   var seneca = root.seneca
   var prefix = (seneca.config.msgstats ? seneca.config.msgstats.prefix : null ) || '/msgstats'
   var adminprefix = (seneca.config.admin ? seneca.config.admin.prefix : null ) || '/admin'
-
-  google.load('visualization', '1', {packages:['corechart']});
   var chartData;
   var data;
-
-  google.setOnLoadCallback(function() { 
-    getData(getDataCallback);
-  });
-
+  
   var getDataCallback = function(err, response) {
     data = new google.visualization.DataTable();
     data.addColumn('string', 'Action');
@@ -90,19 +84,97 @@
     }); 
   }
 
-  var senecaMsgStatsModule = angular.module('senecaMsgStatsModule',[])
-
-  senecaMsgStatsModule.directive('senecaMsgStats', ['$http',function($http) {
+  var senecaMsgStatsModule = angular.module('senecaMsgStatsModule', ['angularLoad']);
+  senecaMsgStatsModule.directive('senecaMsgStats', ['$http','$window', '$q', function($http, $window, $q) {
     var def = {
       restrict:'A',
       scope:{
       },
-      controller: function( $scope, $rootScope ) {
+      controller: function( $scope, $rootScope, angularLoad) {
         $("#pattern_form").submit(function( event ) {
           var pattern = $('#pattern_text').val();
           queryInfluxDB(pattern,queryDataCallback);
           event.preventDefault();
         });
+        angularLoad.loadScript('https://raw.githubusercontent.com/HumbleSoftware/Flotr2/master/flotr2.min.js').then(function() {
+          (function basic(container) {
+
+            var
+              barData = [],
+              barTicks = [],
+              barLabels = [],
+              intValues=[],
+              i, graph, maxNum;
+
+              getData(function(err, response) {
+                
+                for(var i = 0; i<response.length;i++) {
+                  barTicks.push([i, response[i][0] ]);
+                  var intvalue = response[i][1];
+                  intValues.push(intvalue);
+                  barData.push([ intvalue, i]);
+                  barLabels.push([i, intvalue + '<br />'+barTicks[i][1]]);
+                }
+
+                maxNum = _.max(intValues);
+                drawBars(container, barData,  barTicks, barLabels, maxNum);  
+            });               
+                            
+          })(document.getElementById("example"));
+              
+            function drawBars(container, data, barTicks, barlabels, maxNum) {  
+            // Draw Graph
+            Flotr.draw(
+                  container,
+                  [data],
+                  {
+                      colors: ['#EF5205'],
+                      htmlText: true,
+                      fontSize: 25,
+                      grid: {
+                          outlineWidth: 1,
+                          outline: 'ws',
+                          horizontalLines: false,
+                          verticalLines: true
+                      },
+                      bars: {
+                          show: true,
+                          horizontal: true,
+                          shadowSize: 0,
+                          barWidth: 0.5,
+                          fillOpacity: 1
+                      },
+                      mouse: {
+                          track: true,
+                          relative: true,
+                          trackFormatter: function (pos) {
+                              var ret;
+                              $.each(barlabels, function (k, v) {
+                                  if (v[0] == pos.y) {
+                                      ret = v[1];
+                                  };
+                              });
+                              return ret
+                          }
+                      },
+                      xaxis: {
+                          min: 0,
+                          max: maxNum,
+                          margin: true,
+                          tickDecimals: 0
+                      },
+                      yaxis: {
+                          ticks: barTicks
+                      }
+                  }
+                );
+            }
+        }).catch(function() {
+          console.log("script load error");
+        });
+      },
+      link: function (scope, element, attrs) {
+
       },
       templateUrl:prefix+"/_msg_stats_template.html"
     }
