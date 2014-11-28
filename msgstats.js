@@ -1,8 +1,7 @@
 /* Copyright (c) 2013 Richard Rodger, MIT License */
-"use strict";
+'use strict';
 
-var _            = require('underscore')
-var connect      = require('connect')
+var connect      = require('connect');
 var serveStatic  = require('serve-static');
 var collector    = require('seneca-collector');
 
@@ -72,11 +71,12 @@ module.exports = function( options ) {
 
   //-----API Section------//
   var data;
-  function getData(cb) {
-    seneca.act({role:'collector', cmd:'get', fieldName:'*', seriesName:'actions'}, function(err,result){
+  function getData(fieldName, cb) {
+    seneca.act({role:'collector', cmd:'get', fieldName:fieldName}, function(err,result){
       cb(null,result);
     });
   }
+    
 
   function queryInflux(pattern, cb) {
     seneca.act( {role:'collector', cmd:'get', pattern:pattern, seriesName:'actions'}, function(err,result){
@@ -86,7 +86,7 @@ module.exports = function( options ) {
 
   var app = connect()
   app.use(serveStatic(__dirname+'/web'))
-
+  var seriesName;
   var use = function(req,res,next){
     if( 0===req.url.indexOf(options.contentprefix) ) {
       if( 0 == req.url.indexOf(options.contentprefix+'/init.js') ) {
@@ -99,7 +99,8 @@ module.exports = function( options ) {
     }
 
     if(0 == req.url.indexOf('/influxdb/getData')) {
-      var result = getData(function(err, response) {
+      seriesName = req.query.seriesName;
+      var result = getData(req.query.fieldName, function(err, response) {
         res.send(response);
       });
     } else if(0 == req.url.indexOf('/influxdb/queryInflux')){

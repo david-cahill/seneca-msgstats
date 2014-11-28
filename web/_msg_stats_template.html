@@ -1,7 +1,12 @@
 <h1>Message Statistics</h1>
+<select id="chartType">
+	<option value="actionCount">Actions Count</option>
+	<option value="timeCount">Time Count</option>
+</select>
 <div id="example" style="width:100%;height:400px;"></div>
 <form id="pattern_form">
     <label>Please enter a seneca action pattern using the following format, role:cmd</label>
     <input id="pattern_text" type="text" name="pattern">
     <input type="submit" value="Submit">
 </form>
+
