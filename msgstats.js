@@ -79,9 +79,14 @@ module.exports = function( options ) {
     
 
   function queryInflux(pattern, cb) {
-    seneca.act( {role:'collector', cmd:'get', pattern:pattern, seriesName:'actions'}, function(err,result){
+    seneca.act({role:'collector', cmd:'get', pattern:pattern}, function(err,result){
        cb(null, result);
     });
+  }
+
+  function getSenecaPatterns(cb) {
+    var patterns = seneca.list();
+    cb(null, patterns);
   }
 
   var app = connect()
@@ -97,16 +102,20 @@ module.exports = function( options ) {
       req.url = req.url.substring(options.contentprefix.length)
       return app( req, res );
     }
-
+    console.log("Req.URL = "+req.url);
     if(0 == req.url.indexOf('/influxdb/getData')) {
-      seriesName = req.query.seriesName;
-      var result = getData(req.query.fieldName, function(err, response) {
-        res.send(response);
-      });
-    } else if(0 == req.url.indexOf('/influxdb/queryInflux')){
-      var result = queryInflux(req.param('actions'), function(err, response) {
-        res.send(response);
-      });
+        seriesName = req.query.seriesName;
+        getData(req.query.fieldName, function(err, response) {
+          res.send(response);
+        });
+    } else if(0 == req.url.indexOf('/influxdb/queryInflux')) {
+        queryInflux(req.param('actions'), function(err, response) {
+          res.send(response);
+        });
+    } else if(0 == req.url.indexOf('/getPatterns')) {
+        getSenecaPatterns(function(err, response) {
+          res.send(response);
+        });
     }
 
     else return next();

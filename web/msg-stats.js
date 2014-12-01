@@ -16,8 +16,12 @@
   } 
 
   var queryDataCallback = function(err, response) {
-    updateGoogleChart(response);
+    updateChart(response);
   } 
+
+  function updateChart(resp) {
+    var response = resp;
+  }
 
   function drawChart() {
     var options = {
@@ -90,20 +94,47 @@
       data: {actions:pattern},
       dataType:'json'
     }).success(function(data) {
-        var response = data;
+        var response = parseInfluxData(data);
         for(var i = 0; i < response.length; i++) {
           var roleData = [];
-          var role  = response[i].role;
-          var cmd   = response[i].cmd;
           var pattern  = response[i].pattern;
           var count = response[i].count;
+          var time = response[i].time;
           roleData.push(pattern); 
           roleData.push(count);
+          roleData.push(time);
           result.push(roleData);
         }
+        console.log("queryInfluxDB = " + result);
         cb(null,result)
     }); 
   }
+
+  function queryInfluxDBTime(pattern,cb) {
+    var result = [];
+    $.ajax({
+      url: "/influxdb/queryInflux",
+      type: 'get',
+      data: {actions:pattern},
+      dataType:'json'
+    }).success(function(data) {
+        var response = parseInfluxTimeData(data);
+        for(var i = 0; i < response.length; i++) {
+          var roleData = [];
+          //var pattern  = response[i].pattern;
+          var count = response[i].count;
+          var time = response[i].time;
+          //roleData.push(pattern); 
+          roleData.push(count);
+          roleData.push(time);
+          result.push(roleData);
+        }
+        console.log("queryInfluxDB = " + result);
+        cb(null,result)
+    }); 
+  }
+
+
 
   function parseInfluxData(data) {
     if(data.length > 0) {
@@ -139,24 +170,22 @@
   }
 
   function parseInfluxTimeData(data) {
+    console.log("parseInfluxTimeData" + JSON.stringify(data));
     if(data.length > 0) {
       var columns = data[0].columns;
       var points  = data[0].points;
       var timeIndex = columns.indexOf("time");
-  
       var result = [];
       var count = 1;
       var countedRoles = [];
 
       for(var i = 0; i<points.length; i++) {
-
         var containsRole = _.contains(countedRoles,points[i][timeIndex]);
-
         if(!containsRole) {
           result.push({time:points[i][timeIndex],
                        count:count
                       });
-          countedRoles.push(points[i][timeIndex]);
+        countedRoles.push(points[i][timeIndex]);
         } else {
 
           for(var j = 0; j < result.length; j++) {
@@ -180,25 +209,48 @@
       controller: function( $scope, $rootScope, angularLoad) {
         $("#pattern_form").submit(function( event ) {
           var pattern = $('#pattern_text').val();
-          queryInfluxDB(pattern,queryDataCallback);
+          //queryInfluxDB(pattern,queryDataCallback);
+          $("#example").show();
+          basic_time(pattern,document.getElementById("example"));
           event.preventDefault();
         });
+
+        loadSenecaPatternsList();
 
         $("#chartType").change(function(event) {
           var val = $("#chartType").val();
           switch (val) {
             case 'actionCount':
+            $("#example").show();
             basic(document.getElementById("example"));
             break;
             case 'timeCount':
-            basic_time(document.getElementById("example"));
+            $("#example").hide();
+            $("#pattern_form").show();
             break;
             default:
             basic(document.getElementById("example"));
           }
         });
-        
-        function basic_time(container) {
+
+        function loadSenecaPatternsList() {
+          $.ajax({
+            url:'/getPatterns',
+            type:'get',
+            dataType:'json'
+          }).success(function(data) {
+            createPatternCheckboxes(data);
+          });
+        }
+
+        function createPatternCheckboxes(data) {
+          console.log("pattern checkboxes " + JSON.stringify(data));
+          for(var i = 0; i<data.length;i++) {
+            $("#patterns_list").append('<label><input type="checkbox" />'+JSON.stringify(data[i])+'</label><br>');  
+          }
+        }
+
+        function basic_time(pattern, container) {
 
             var
               d1    = [],
@@ -206,9 +258,10 @@
               graph,
               x, o;
 
-            getTimeData(function(err, response) {
+            queryInfluxDBTime(pattern,function(err, response) {
               for(var i = 0; i<response.length;i++) {
-                d1.push([ response[i][0], response[i][1] ]);
+                          //time, count
+                d1.push([ response[i][1], response[i][0] ]);
               }
               graph = drawGraph();     
             });
@@ -224,7 +277,7 @@
               HtmlText : false,
               title : 'Time'
             };
-                  
+
             // Draw graph with default options, overwriting with passed options
             function drawGraph (opts) {
               // Clone the options, so the 'options' variable always keeps intact.
