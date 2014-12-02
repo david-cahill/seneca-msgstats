@@ -96,7 +96,7 @@
       data: {actions:pattern},
       dataType:'json'
     }).success(function(data) {
-        console.log("Data = " + JSON.stringify(data));
+      if(data.length > 0) {
         var response = parseInfluxData(data);
         for(var i = 0; i < response.length; i++) {
           var roleData = [];
@@ -109,6 +109,7 @@
           result.push(roleData);
         }
         cb(null,result)
+      }
     }); 
   }
 
@@ -120,6 +121,7 @@
       data: {actions:pattern},
       dataType:'json'
     }).success(function(data) {
+      if(data.length > 0) {
         var response = parseInfluxTimeData(data);
         for(var i = 0; i < response.length; i++) {
           var roleData = [];
@@ -131,7 +133,8 @@
           roleData.push(time);
           result.push(roleData);
         }
-        cb(null,result)
+      }
+      cb(null,result)
     }); 
   }
 
@@ -207,6 +210,13 @@
       scope:{
       },
       controller: function( $scope, $rootScope, angularLoad) {
+        var barTicks = [],
+            intValues = [],
+            barData = [],
+            barLabels = [],
+            intvalue, i, maxNum;
+        var counter = 0;
+
         $("#pattern_form").submit(function( event ) {
           var pattern = $('#pattern_text').val();
           $("#example").show();
@@ -218,17 +228,18 @@
 
         $("#chartType").change(function(event) {
           var val = $("#chartType").val();
+          $(":checkbox").prop('checked', false);
           switch (val) {
             case 'actionCount':
             $("#example").show();
-            basic(document.getElementById("example"));
+            basic(document.getElementById("example"),[],[],[],0);
             break;
             case 'timeCount':
-            $("#example").hide();
-            $("#pattern_form").show();
+            console.log("time count called");
+            //$("#example").hide();
+            //$("#pattern_form").show();
+            basic_time('',document.getElementById("example"));
             break;
-            default:
-            basic(document.getElementById("example"));
           }
         });
 
@@ -246,13 +257,10 @@
           for(var i = 0; i<data.length;i++) {
             $("#patterns_list").append('<label for="checkbox'+i+'" class="pattern_label"><input id="checkbox'+i+'" class="pattern_checkbox" type="checkbox" />'+JSON.stringify(data[i])+'</label><br>');  
           }
-           var barTicks = [],
-                    intValues = [],
-                    barData = [],
-                    barLabels = [],
-                    intvalue, i, maxNum;
-          var counter = 0;
+
           $('.pattern_checkbox').change(function() {
+            var chartType = $("#chartType").val();
+            selectedPatterns = [];
             if(this.checked) {
               //console.log("checked", $("label[for='"+this.id+"']").text());
               selectedPatterns.push( $("label[for='"+this.id+"']").text() );
@@ -260,45 +268,63 @@
               pattern = pattern.replace('{','');
               pattern = pattern.replace('}','');
               pattern = pattern.replace(/["']/g, "");
-             
 
-              queryInfluxDB(pattern,function(err, response) {
-                console.log("queryInfluxDB response text = " + response);
-                for(var i = 0; i<response.length;i++) {
-                  barTicks.push([counter, response[i][0] ]);
-                  var intvalue = response[i][1];
-                  intValues.push(intvalue);
-                  barData.push([ intvalue, counter]);
-                  barLabels.push([counter, intvalue + '<br />'+barTicks[i][1]]);
-                  counter++;
+              if(chartType === 'actionCount') {
+                queryInfluxDB(pattern,function(err, response) {
+                  console.log("queryInfluxDB response text = " + response);
+                  for(var i = 0; i<response.length;i++) {
+                    barTicks.push([counter, response[i][0] ]);
+                    var intvalue = response[i][1];
+                    intValues.push(intvalue);
+                    barData.push([ intvalue, counter]);
+                    barLabels.push([counter, intvalue + '<br />'+barTicks[i][1]]);
+                    counter++;
 
-                }
-                maxNum = _.max(intValues);
-                console.log(barData);
-                drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
-              });
+                  }
+                  maxNum = _.max(intValues);
+                  console.log(barData);
+                  drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
+                });
+              } else {
+                basic_time(pattern,document.getElementById('example'));
+              }
             } else {
               var patternUnchecked = $("label[for='"+this.id+"']").text();
               patternUnchecked = patternUnchecked.replace('{','');
               patternUnchecked = patternUnchecked.replace('}','');
               patternUnchecked = patternUnchecked.replace(/["']/g, "");
+              var elementRemoved = false;
+              if(chartType === 'actionCount') {
 
-              for(var i = barData.length-1; i >= 0; i--) {
-                console.log("i == " + barTicks[i]);
-                if(barTicks[i][1] === patternUnchecked) {
-                  barData.splice(i,1);
-                  barTicks.splice(i,1);
-                  barLabels.splice(i,1);
+                for(var i = barData.length-1; i >= 0; i--) {
+                  console.log("i == " + barTicks[i]);
+                  if(barTicks[i][1] === patternUnchecked) {
+                    barData.splice(i,1);
+                    barTicks.splice(i,1);
+                    barLabels.splice(i,1);
+                    elementRemoved = true;
+                  }
                 }
+
+                if(elementRemoved) {
+                  for(var i = 0; i < barData.length; i++) {
+                    barData[i][1] = i;
+                    barTicks[i][0] = i;
+                    barLabels[i][0] = i;
+                  }
+                  counter = barData.length;
+                }
+
+                drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
+              } else {
+                basic_time('',document.getElementById('example'));
               }
-              drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
             }
           });
 
         }
 
         function basic_time(pattern, container) {
-
             var
               d1    = [],
               options,
@@ -310,7 +336,7 @@
                           //time, count
                 d1.push([ response[i][1], response[i][0] ]);
               }
-              graph = drawGraph();     
+              graph = drawGraph(); 
             });
                
             options = {
@@ -327,6 +353,7 @@
 
             // Draw graph with default options, overwriting with passed options
             function drawGraph (opts) {
+              console.log("drawGraph called");
               // Clone the options, so the 'options' variable always keeps intact.
               o = Flotr._.extend(Flotr._.clone(options), opts || {});
 
