@@ -7,6 +7,8 @@
   var adminprefix = (seneca.config.admin ? seneca.config.admin.prefix : null ) || '/admin'
   var chartData;
   var data;
+  var selectedPatterns = [];
+
   
   var getDataCallback = function(err, response) {
     data = new google.visualization.DataTable();
@@ -94,6 +96,7 @@
       data: {actions:pattern},
       dataType:'json'
     }).success(function(data) {
+        console.log("Data = " + JSON.stringify(data));
         var response = parseInfluxData(data);
         for(var i = 0; i < response.length; i++) {
           var roleData = [];
@@ -105,7 +108,6 @@
           roleData.push(time);
           result.push(roleData);
         }
-        console.log("queryInfluxDB = " + result);
         cb(null,result)
     }); 
   }
@@ -129,7 +131,6 @@
           roleData.push(time);
           result.push(roleData);
         }
-        console.log("queryInfluxDB = " + result);
         cb(null,result)
     }); 
   }
@@ -170,7 +171,6 @@
   }
 
   function parseInfluxTimeData(data) {
-    console.log("parseInfluxTimeData" + JSON.stringify(data));
     if(data.length > 0) {
       var columns = data[0].columns;
       var points  = data[0].points;
@@ -209,7 +209,6 @@
       controller: function( $scope, $rootScope, angularLoad) {
         $("#pattern_form").submit(function( event ) {
           var pattern = $('#pattern_text').val();
-          //queryInfluxDB(pattern,queryDataCallback);
           $("#example").show();
           basic_time(pattern,document.getElementById("example"));
           event.preventDefault();
@@ -244,10 +243,58 @@
         }
 
         function createPatternCheckboxes(data) {
-          console.log("pattern checkboxes " + JSON.stringify(data));
           for(var i = 0; i<data.length;i++) {
-            $("#patterns_list").append('<label><input type="checkbox" />'+JSON.stringify(data[i])+'</label><br>');  
+            $("#patterns_list").append('<label for="checkbox'+i+'" class="pattern_label"><input id="checkbox'+i+'" class="pattern_checkbox" type="checkbox" />'+JSON.stringify(data[i])+'</label><br>');  
           }
+           var barTicks = [],
+                    intValues = [],
+                    barData = [],
+                    barLabels = [],
+                    intvalue, i, maxNum;
+          var counter = 0;
+          $('.pattern_checkbox').change(function() {
+            if(this.checked) {
+              //console.log("checked", $("label[for='"+this.id+"']").text());
+              selectedPatterns.push( $("label[for='"+this.id+"']").text() );
+              var pattern = $("label[for='"+this.id+"']").text();
+              pattern = pattern.replace('{','');
+              pattern = pattern.replace('}','');
+              pattern = pattern.replace(/["']/g, "");
+             
+
+              queryInfluxDB(pattern,function(err, response) {
+                console.log("queryInfluxDB response text = " + response);
+                for(var i = 0; i<response.length;i++) {
+                  barTicks.push([counter, response[i][0] ]);
+                  var intvalue = response[i][1];
+                  intValues.push(intvalue);
+                  barData.push([ intvalue, counter]);
+                  barLabels.push([counter, intvalue + '<br />'+barTicks[i][1]]);
+                  counter++;
+
+                }
+                maxNum = _.max(intValues);
+                console.log(barData);
+                drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
+              });
+            } else {
+              var patternUnchecked = $("label[for='"+this.id+"']").text();
+              patternUnchecked = patternUnchecked.replace('{','');
+              patternUnchecked = patternUnchecked.replace('}','');
+              patternUnchecked = patternUnchecked.replace(/["']/g, "");
+
+              for(var i = barData.length-1; i >= 0; i--) {
+                console.log("i == " + barTicks[i]);
+                if(barTicks[i][1] === patternUnchecked) {
+                  barData.splice(i,1);
+                  barTicks.splice(i,1);
+                  barLabels.splice(i,1);
+                }
+              }
+              drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
+            }
+          });
+
         }
 
         function basic_time(pattern, container) {
@@ -302,16 +349,15 @@
             // When graph is clicked, draw the graph with default area.
             Flotr.EventAdapter.observe(container, 'flotr:click', function () { graph = drawGraph(); });
           }
-        function basic(container) {
+        function basic(container, barData, barTicks, barLabels, maxNum) {
 
-            var
-              barData = [],
-              barTicks = [],
-              barLabels = [],
-              intValues=[],
-              i, graph, maxNum;
-
-              getData(function(err, response) {
+            //var
+             // barData = [],
+             // barTicks = [],
+             // barLabels = [],
+             // intValues=[],
+             // i, graph, maxNum;
+              /*getData(function(err, response) {
                 
                 for(var i = 0; i<response.length;i++) {
                   barTicks.push([i, response[i][0] ]);
@@ -323,7 +369,9 @@
 
                 maxNum = _.max(intValues);
                 drawBars(container, barData,  barTicks, barLabels, maxNum);  
-            });               
+            });   */  
+              //maxNum = _.max(intValues);
+              drawBars(container, barData,  barTicks, barLabels, maxNum);           
                             
           }
 
@@ -375,7 +423,7 @@
               );
         }
         angularLoad.loadScript('https://raw.githubusercontent.com/HumbleSoftware/Flotr2/master/flotr2.min.js').then(function() {
-          basic(document.getElementById("example"));
+          basic(document.getElementById("example"),[],[],[],0);
         }).catch(function() {
           console.log("script load error");
         });
