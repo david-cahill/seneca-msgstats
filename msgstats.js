@@ -102,7 +102,7 @@ module.exports = function( options ) {
       req.url = req.url.substring(options.contentprefix.length)
       return app( req, res );
     }
-    console.log("Req.URL = "+req.url);
+    
     if(0 == req.url.indexOf('/influxdb/getData')) {
         seriesName = req.query.seriesName;
         getData(req.query.fieldName, function(err, response) {

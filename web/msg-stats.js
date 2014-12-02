@@ -228,6 +228,11 @@
 
         $("#chartType").change(function(event) {
           var val = $("#chartType").val();
+          barTicks = [];
+          intValues = [];
+          barData = [];
+          barLabels = [];
+          
           $(":checkbox").prop('checked', false);
           switch (val) {
             case 'actionCount':
@@ -286,6 +291,8 @@
                   drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
                 });
               } else {
+                $("input:checkbox").prop("checked", false);
+                $(this).prop("checked", true);
                 basic_time(pattern,document.getElementById('example'));
               }
             } else {

@@ -14,8 +14,14 @@ Tested on: Seneca 0.5.21, Node 0.10.31
 
 
 ```JavaScript
-var seneca = require('seneca')();
-seneca.use('msgstats');
+var influxOptions = { host:'localhost',
+                      port: 8086,
+                      username:'root',
+                      password:'root',
+                      database:'test_db',
+                      seriesName:'test_series'
+                    };
+seneca.use('msgstats', {capture:'role:*', format:['role', 'plugin'], influxOpts:influxOptions});
 ```
 
 ## Install
