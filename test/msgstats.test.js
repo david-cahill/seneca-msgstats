@@ -17,5 +17,4 @@ describe('msgstats', function() {
       done()
     })
   });
-
 })

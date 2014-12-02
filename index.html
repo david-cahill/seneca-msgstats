@@ -1,0 +1,71 @@
+<html>
+  <head>
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="http://get.influxdb.org/influxdb-latest.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      var data;
+
+      // Load the Visualization API and the piechart package.
+      google.load('visualization', '1.0', {'packages':['corechart']});
+
+      // Set a callback to run when the Google Visualization API is loaded.
+      google.setOnLoadCallback(drawChart);
+
+      // Callback that creates and populates a data table,
+      // instantiates the pie chart, passes in the data and
+      // draws it.
+      function drawChart() {
+         data = new google.visualization.DataTable();
+        // Create the data table.
+        /*var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Topping');
+        data.addColumn('number', 'Slices');
+        data.addRows([
+          ['Mushrooms', 3],
+          ['Onions', 1],
+          ['Olives', 1],
+          ['Zucchini', 1],
+          ['Pepperoni', 2]
+        ]);*/
+       
+        var influxdb = new InfluxDB({host:'localhost', port:8086, username:'root', password:'root', database:'test_db2'});
+       // for(var i = 0; i< 6; i++) {
+       //   influxdb.writePoint("temp", {"x": (10*(1+Math.random())), "y":(50*(1+Math.random())) });
+       // }  
+        
+         data.addColumn('number', 'X');
+         data.addColumn('number', 'Y');
+
+        var point = influxdb.readPoint("*", "temp", function(response) {
+          console.log(JSON.stringify(response[0].points));
+          var points = JSON.stringify(response[0].points);
+
+          for(var i = 0; i < response[0].points.length; i++) {
+            data.addRow(
+              [response[0].points[i].x, response[0].points[i].y]
+            );
+          }
+          var options = {'title':'How Much Pizza I Ate Last Night',
+                       'width':500,
+                       'height':400,
+                        trendlines: {0: {type: 'exponential',color: 'green'}}
+                        };
+
+          // Instantiate and draw our chart, passing in some options.
+          var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
+          chart.draw(data, options);
+        });
+
+      }
+
+      
+    </script>
+
+  </head>
+
+  <body>
+    <!--Div that will hold the pie chart-->
+    <div id="chart_div"></div>
+  </body>
+</html>
