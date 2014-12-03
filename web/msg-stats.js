@@ -221,6 +221,8 @@
             intvalue, i, maxNum;
         var counter = 0;
 
+        $('input#pattern_search').quicksearch('div#patterns_list label');
+
         $("#pattern_form").submit(function( event ) {
           var pattern = $('#pattern_text').val();
           $("#example").show();
@@ -264,7 +266,7 @@
 
         function createPatternCheckboxes(data) {
           for(var i = 0; i<data.length;i++) {
-            $("#patterns_list").append('<label for="checkbox'+i+'" class="pattern_label"><input id="checkbox'+i+'" class="pattern_checkbox" type="checkbox" />'+JSON.stringify(data[i])+'</label><br>');  
+            $('#patterns_list').append('<label for="checkbox'+i+'" class="pattern_label"><input id="checkbox'+i+'" class="pattern_checkbox" type="checkbox" />'+JSON.stringify(data[i])+'</label>');  
           }
 
           $('.pattern_checkbox').change(function() {
