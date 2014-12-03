@@ -78,8 +78,8 @@ module.exports = function( options ) {
   }
     
 
-  function queryInflux(pattern, cb) {
-    seneca.act({role:'collector', cmd:'get', pattern:pattern}, function(err,result){
+  function queryInflux(pattern, type, cb) {
+    seneca.act({role:'collector', cmd:'get', pattern:pattern, type:type}, function(err,result){
        cb(null, result);
     });
   }
@@ -109,7 +109,8 @@ module.exports = function( options ) {
           res.send(response);
         });
     } else if(0 == req.url.indexOf('/influxdb/queryInflux')) {
-        queryInflux(req.param('actions'), function(err, response) {
+        var type = req.param('type');
+        queryInflux(req.param('actions'),type, function(err, response) {
           res.send(response);
         });
     } else if(0 == req.url.indexOf('/getPatterns')) {

@@ -93,7 +93,7 @@
     $.ajax({
       url: "/influxdb/queryInflux",
       type: 'get',
-      data: {actions:pattern},
+      data: {actions:pattern,type:'normal'},
       dataType:'json'
     }).success(function(data) {
       if(data.length > 0) {
@@ -118,11 +118,12 @@
     $.ajax({
       url: "/influxdb/queryInflux",
       type: 'get',
-      data: {actions:pattern},
+      data: {actions:pattern,type:'time'},
       dataType:'json'
     }).success(function(data) {
       if(data.length > 0) {
         var response = parseInfluxTimeData(data);
+        console.log("queryInfluxDBTime Respone = " + JSON.stringify(response));
         for(var i = 0; i < response.length; i++) {
           var roleData = [];
           //var pattern  = response[i].pattern;
@@ -178,25 +179,28 @@
       var columns = data[0].columns;
       var points  = data[0].points;
       var timeIndex = columns.indexOf("time");
+      var countIndex = columns.indexOf("count");
       var result = [];
       var count = 1;
       var countedRoles = [];
 
       for(var i = 0; i<points.length; i++) {
-        var containsRole = _.contains(countedRoles,points[i][timeIndex]);
+        result.push({time:points[i][timeIndex],
+                     count:points[i][countIndex]});
+        /*var containsRole = _.contains(countedRoles,points[i][timeIndex]);
         if(!containsRole) {
           result.push({time:points[i][timeIndex],
                        count:count
                       });
-        countedRoles.push(points[i][timeIndex]);
-        } else {
+          countedRoles.push(points[i][timeIndex]);
+          } else {
 
-          for(var j = 0; j < result.length; j++) {
-            if(result[j].time === points[i][timeIndex]) {
-              result[j].count++;
+            for(var j = 0; j < result.length; j++) {
+              if(result[j].time === points[i][timeIndex]) {
+                result[j].count++;
+              }
             }
-          }
-      }
+        }*/
 
       }
       return result;
@@ -350,6 +354,9 @@
               xaxis : {
                 mode : 'time', 
                 labelsAngle : 45
+              },
+              yaxis: {
+                min:0
               },
               selection : {
                 mode : 'x'
