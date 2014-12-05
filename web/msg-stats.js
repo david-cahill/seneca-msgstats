@@ -50,12 +50,12 @@
     })
   }
 
-  function queryInfluxDB(pattern,cb) {
+  function queryInfluxDB(pattern,time,cb) {
     var result = [];
     $.ajax({
       url: "/influxdb/queryInflux",
       type: 'get',
-      data: {actions:pattern,type:'normal'},
+      data: {actions:pattern,type:'normal',time:time},
       dataType:'json'
     }).success(function(data) {
       if(data.length > 0) {
@@ -75,12 +75,12 @@
     }); 
   }
 
-  function queryInfluxDBTime(pattern,cb) {
+  function queryInfluxDBTime(pattern, time, cb) {
     var result = [];
     $.ajax({
       url: "/influxdb/queryInflux",
       type: 'get',
-      data: {actions:pattern,type:'time'},
+      data: {actions:pattern,type:'time', time:time},
       dataType:'json'
     }).success(function(data) {
       if(data.length > 0) {
@@ -171,6 +171,7 @@
     $(document).on('click', '.pattern_block_delete', function() {
       var patternUnchecked = $(this).attr('alt');
       var chartType = $("#chartType").val();
+      var time      = $('#dateRange').val();
       var elementRemoved = false;
       if(chartType === 'actionCount') {
         for(var i = barData.length-1; i >= 0; i--) {
@@ -191,6 +192,9 @@
         }
         drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
         $(this).parent().remove();
+      } else {
+        basic_time('', time, document.getElementById('example'));
+        $(this).parent().remove();
       }
     });
 
@@ -200,8 +204,9 @@
       //Add selected pattern to chart
       selectedPatterns.push(pattern);
       var chartType = $("#chartType").val();
+      var time      = $('#dateRange').val();
       if(chartType === 'actionCount') {
-        queryInfluxDB(pattern,function(err, response) {
+        queryInfluxDB(pattern, time, function(err, response) {
           for(var i = 0; i<response.length;i++) {
             barTicks.push([ counter, response[i][0] ]);
             var intvalue = response[i][1];
@@ -215,7 +220,8 @@
           addPatternBlock(pattern);
         });
       } else {
-        basic_time(pattern,document.getElementById('example'));
+        basic_time(pattern, time, document.getElementById('example'));
+        addPatternBlock(pattern);
       }
     }
 
@@ -244,7 +250,7 @@
       barLabels = [];
       
       $('#patternsAdded').empty();
-
+       var time = $('#dateRange').val();
       $(":checkbox").prop('checked', false);
       switch (val) {
         case 'actionCount':
@@ -252,7 +258,7 @@
         basic(document.getElementById("example"),[],[],[],0);
         break;
         case 'timeCount':
-        basic_time('',document.getElementById("example"));
+        basic_time('', time, document.getElementById("example"));
         break;
       }
     });
@@ -340,14 +346,14 @@
       });
     }
 
-    function basic_time(pattern, container) {
+    function basic_time(pattern, time, container) {
       var
         d1    = [],
         options,
         graph,
         x, o;
 
-      queryInfluxDBTime(pattern,function(err, response) {
+      queryInfluxDBTime(pattern, time, function(err, response) {
         for(var i = 0; i<response.length;i++) {
                     //time, count
           d1.push([ response[i][1], response[i][0] ]);

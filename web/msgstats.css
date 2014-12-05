@@ -71,3 +71,7 @@
 .pattern_block_delete:hover{
   cursor:pointer;
 }
+
+#dateRange {
+  margin-right:20px;
+}
