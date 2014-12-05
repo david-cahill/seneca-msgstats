@@ -164,13 +164,39 @@
       console.log("script load error");
     });
 
-    angularLoad.loadScript('https://code.jquery.com/ui/1.11.2/jquery-ui.js');
+    //angularLoad.loadScript('https://code.jquery.com/ui/1.11.2/jquery-ui.js');
     angularLoad.loadCSS('/msgstats/msgstats.css');
     angularLoad.loadCSS('/msgstats/angucomplete.css');
 
-    $scope.selectResult = function(result) {
-      var pattern = result.originalObject.pattern;
+    $(document).on('click', '.pattern_block_delete', function() {
+      var patternUnchecked = $(this).attr('alt');
+      var chartType = $("#chartType").val();
+      var elementRemoved = false;
+      if(chartType === 'actionCount') {
+        for(var i = barData.length-1; i >= 0; i--) {
+          if(barTicks[i][1] === patternUnchecked) {
+            barData.splice(i,1);
+            barTicks.splice(i,1);
+            barLabels.splice(i,1);
+            elementRemoved = true;
+          }
+        }
+        if(elementRemoved) {
+          for(var i = 0; i < barData.length; i++) {
+            barData[i][0] = i;
+            barTicks[i][0] = i;
+            barLabels[i][0] = i;
+          }
+          counter = barData.length;
+        }
+        drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
+        $(this).parent().remove();
+      }
+    });
 
+    $scope.selectResult = function(result) {
+      $('#patternsAutoComplete_value').val('');
+      var pattern = result.originalObject.pattern;
       //Add selected pattern to chart
       selectedPatterns.push(pattern);
       var chartType = $("#chartType").val();
@@ -186,10 +212,15 @@
           }
           maxNum = _.max(intValues);
           drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
+          addPatternBlock(pattern);
         });
       } else {
         basic_time(pattern,document.getElementById('example'));
       }
+    }
+
+    function addPatternBlock(pattern) {
+      $('#patternsAdded').append('<div class="pattern_block"><label class="pattern_block_text">'+pattern+'</label><img class="pattern_block_delete" alt="'+pattern+'" src="/msgstats/images/delete.png"></div>');
     }
 
     $("#pattern_form").submit(function( event ) {
@@ -201,9 +232,7 @@
 
     loadSenecaPatternsList();
 
-    $('.angucomplete-selected-row').click(function() {
-      console.log("angucomplete-row clicked");
-    });
+    
     //$("#dateFrom").datepicker();
     //$("#dateTo").datepicker();
 
@@ -214,6 +243,8 @@
       barData = [];
       barLabels = [];
       
+      $('#patternsAdded').empty();
+
       $(":checkbox").prop('checked', false);
       switch (val) {
         case 'actionCount':
