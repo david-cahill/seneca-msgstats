@@ -10,11 +10,11 @@ module.exports = function( options ) {
   var plugin = 'msgstats'
 
   options = seneca.util.deepextend({
-    capture:'role:*',
+    pin:'',
     format:['role'],
     prefix:'/msgstats/',
     contentprefix:'/msgstats',
-    influxOptions:{}
+    influxOpts:{}
   },options)
 
   seneca.use(collector,options.influxOpts);
@@ -25,31 +25,7 @@ module.exports = function( options ) {
     done(null, {now:Date.now()});
   };
 
-  function captureAllMessagesV2(args, done) {
-    //Check seneca args and look for capture fields in options.format.
-    var captureFields = options.format;
-    var point = {};
-
-    for(var i = 0; i < captureFields.length; i++) {
-      if(args[captureFields[i]]) {
-        if(!point['pattern']) {
-          point['pattern'] = captureFields[i]+':'+args[captureFields[i]];
-        } else {
-          point['pattern'] = point['pattern'] + ","+captureFields[i]+':'+args[captureFields[i]];
-        }
-      }
-    }
-
-    console.log("**** Point To Send = ****" + JSON.stringify(point));
-
-    seneca.act({role:'collector', cmd:'send', point:point, options:options}, function(err, result) {
-      console.log("****** data send result", result);
-    });
-
-    this.prior(args, done);
-  }
-
-   function captureAllMessagesV3(args) {
+  function captureAllMessages(args) {
     //Check seneca args and look for capture fields in options.format.
     var captureFields = options.format;
     var point = {};
@@ -57,17 +33,13 @@ module.exports = function( options ) {
     point['pattern'] = meta.pattern;
 
     if(meta.pattern.indexOf('role:collector') === -1) {
-      console.log("**** Point To Send = ****" + JSON.stringify(point));
       seneca.act({role:'collector', cmd:'send', point:point, options:options}, function(err, result) {
-        console.log("****** data send result", result);
       });
     }
   }
 
-
   //Capture all actions
-  //seneca.wrap(options.capture, captureAllMessagesV2);
-  seneca.sub({}, captureAllMessagesV3);
+  seneca.sub({}, captureAllMessages);
 
   //-----API Section------//
   var data;
@@ -87,6 +59,25 @@ module.exports = function( options ) {
   function getSenecaPatterns(cb) {
     var patterns = seneca.list();
     cb(null, patterns);
+  }
+
+  function parseSenecaPatterns(patterns, searchTerm, cb) {
+    var result = {};
+    result['patterns'] = [];
+    for(var i = 0; i < patterns.length;i++) {
+      var pattern = '';
+      for(var k in patterns[i]) {
+        if(pattern === '') {
+          pattern = k+ ':'+ patterns[i][k];
+        } else {
+          pattern = pattern + ',' + k+ ':'+ patterns[i][k];
+        }
+      }
+      if(pattern.indexOf(searchTerm) > -1) {
+        result['patterns'].push({pattern:pattern});
+      }
+    }
+    cb(null, result);
   }
 
   var app = connect()
@@ -117,6 +108,13 @@ module.exports = function( options ) {
         getSenecaPatterns(function(err, response) {
           res.send(response);
         });
+    } else if(0 == req.url.indexOf('/searchPatterns')) {
+        var searchTerm = req.param('s');
+        getSenecaPatterns(function(err, response) {
+          parseSenecaPatterns(response, searchTerm, function(err, response) {
+              res.send(response);
+          });
+        });
     }
 
     else return next();
@@ -135,7 +133,7 @@ module.exports = function( options ) {
       content:[
         {type:'js',file:__dirname+'/web/msg-stats.js'},
         {type:'js',file:__dirname+'/web/angular-load.js'},
-        {type:'js',file:__dirname+'/web/jquery.quicksearch.js'}
+        {type:'js',file:__dirname+'/web/angucomplete.js'}
       ]
     }})
     done()

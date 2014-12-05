@@ -1,12 +1,16 @@
-<h1>Message Statistics</h1>
-<select id="chartType" style="margin-left:40px;">
+<label for="chartType">Chart Type:</label>
+<select id="chartType">
 	<option value="actionCount">Actions Count</option>
 	<option value="timeCount">Time Count</option>
 </select>
-<div id="example" style="width:800px;height:400px;float:left;margin-top:20px;"></div>
-
-<div id="patterns_list" style="width:300px;height:300px;overflow:scroll;float:right;">
-
-</div>
+<div id="example"></div>
+<angucomplete id="patternsAutoComplete"
+              placeholder="Search Patterns"
+              pause="400"
+              selectedobject="patternObj"
+              url="/searchPatterns?s="
+              datafield="patterns"
+              titlefield="pattern"
+              inputclass="form-control form-control-small"/>
 
 
