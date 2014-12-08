@@ -8,6 +8,7 @@
   var chartData;
   var data;
   var selectedPatterns = [];
+  var timeGraphData = [];
 
   function getData(cb) {
     var result = [];
@@ -193,7 +194,14 @@
         drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
         $(this).parent().remove();
       } else {
-        basic_time('', time, document.getElementById('example'));
+        console.log("timeGraphData = "+JSON.stringify(timeGraphData));
+        for(var i = 0; i < timeGraphData.length; i++) {
+          if(timeGraphData[i].label === patternUnchecked) {
+            timeGraphData.splice(i,1);
+          }
+        }
+        console.log("timeGraphData 2 = "+JSON.stringify(timeGraphData));
+        basic_time(document.getElementById('example'));
         $(this).parent().remove();
       }
     });
@@ -220,7 +228,22 @@
           addPatternBlock(pattern);
         });
       } else {
-        basic_time(pattern, time, document.getElementById('example'));
+        var chartColors = ['black', 'red', 'blue', 'green', 'orange'];
+        var colorIndex = Math.floor(Math.random()*chartColors.length);
+        var color = chartColors[colorIndex];
+
+        chartColors.splice(colorIndex,1);
+        queryInfluxDBTime(pattern, time, function(err, response) {
+          var tempData = []
+          for(var i = 0; i<response.length;i++) {
+                      //time, count
+            tempData.push([ response[i][1], response[i][0] ]);
+          }
+          timeGraphData.push({data:tempData, label:pattern, color:color});
+          basic_time(document.getElementById('example'));
+          //drawTimeGraph(options, container, d1); 
+        });
+
         addPatternBlock(pattern);
       }
     }
@@ -232,13 +255,11 @@
     $("#pattern_form").submit(function( event ) {
       var pattern = $('#pattern_text').val();
       $("#example").show();
-      basic_time(pattern,document.getElementById("example"));
+      basic_time(document.getElementById("example"));
       event.preventDefault();
     });
 
-    loadSenecaPatternsList();
-
-    
+    //loadSenecaPatternsList();
     //$("#dateFrom").datepicker();
     //$("#dateTo").datepicker();
 
@@ -258,7 +279,7 @@
         basic(document.getElementById("example"),[],[],[],0);
         break;
         case 'timeCount':
-        basic_time('', time, document.getElementById("example"));
+        basic_time(document.getElementById("example"));
         break;
       }
     });
@@ -277,90 +298,13 @@
       console.log("**** Select Result called: " + result);
     }
 
-    function createPatternCheckboxes(data) {
-      for(var i = 0; i<data.length;i++) {
-        $('#patterns_list').append('<input id="checkbox'+i+'" class="pattern_checkbox" type="checkbox" /><span for="checkbox'+i+'" class="pattern_label">'+JSON.stringify(data[i])+'</span><br/>');  
-      }
-
-      $('.pattern_checkbox').change(function() {
-        var chartType = $("#chartType").val();
-        selectedPatterns = [];
-        if(this.checked) {
-          selectedPatterns.push( $("span[for='"+this.id+"']").text() );
-          var pattern = $("span[for='"+this.id+"']").text();
-          pattern = pattern.replace('{','');
-          pattern = pattern.replace('}','');
-          pattern = pattern.replace(/["']/g, "");
-
-          if(chartType === 'actionCount') {
-            queryInfluxDB(pattern,function(err, response) {
-              for(var i = 0; i<response.length;i++) {
-                barTicks.push([ counter, response[i][0] ]);
-                var intvalue = response[i][1];
-                intValues.push(intvalue);
-                barData.push([ counter, intvalue]);
-
-                barLabels.push([ counter, intvalue + '<br />'+ response[i][0] ]);
-                counter++;
-
-              }
-              maxNum = _.max(intValues);
-              drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
-            });
-          } else {
-            $("input:checkbox").prop("checked", false);
-            $(this).prop("checked", true);
-            basic_time(pattern,document.getElementById('example'));
-          }
-        } else {
-          var patternUnchecked = $("span[for='"+this.id+"']").text();
-          patternUnchecked = patternUnchecked.replace('{','');
-          patternUnchecked = patternUnchecked.replace('}','');
-          patternUnchecked = patternUnchecked.replace(/["']/g, "");
-          var elementRemoved = false;
-          if(chartType === 'actionCount') {
-
-            for(var i = barData.length-1; i >= 0; i--) {
-              if(barTicks[i][1] === patternUnchecked) {
-                barData.splice(i,1);
-                barTicks.splice(i,1);
-                barLabels.splice(i,1);
-                elementRemoved = true;
-              }
-            }
-
-            if(elementRemoved) {
-              for(var i = 0; i < barData.length; i++) {
-                barData[i][0] = i;
-                barTicks[i][0] = i;
-                barLabels[i][0] = i;
-              }
-              counter = barData.length;
-            }
-
-            drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
-          } else {
-            basic_time('',document.getElementById('example'));
-          }
-        }
-      });
-    }
-
-    function basic_time(pattern, time, container) {
+    function basic_time(container) {
       var
         d1    = [],
         options,
         graph,
         x, o;
 
-      queryInfluxDBTime(pattern, time, function(err, response) {
-        for(var i = 0; i<response.length;i++) {
-                    //time, count
-          d1.push([ response[i][1], response[i][0] ]);
-        }
-        graph = drawGraph(); 
-      });
-         
       options = {
         xaxis : {
           mode : 'time', 
@@ -376,8 +320,16 @@
         title : 'Time'
       };
 
+      /*queryInfluxDBTime(pattern, time, function(err, response) {
+        for(var i = 0; i<response.length;i++) {
+                    //time, count
+          d1.push([ response[i][1], response[i][0] ]);
+        }
+        graph = drawTimeGraph(options, container); 
+      });*/
+
       // Draw graph with default options, overwriting with passed options
-      function drawGraph (opts) {
+      /*function drawGraph (opts) {
         // Clone the options, so the 'options' variable always keeps intact.
         o = Flotr._.extend(Flotr._.clone(options), opts || {});
         // Return a new graph.
@@ -386,18 +338,56 @@
           [ d1 ],
           o
         );
-      }
+      }*/
+
+      graph = drawTimeGraph(options, container); 
 
       Flotr.EventAdapter.observe(container, 'flotr:select', function(area){
         // Draw selected area
-        graph = drawGraph({
-          xaxis : { min : area.x1, max : area.x2, mode : 'time', labelsAngle : 45 },
-          yaxis : { min : area.y1, max : area.y2 }
-        });
+        var opts = {
+          xaxis : { 
+            min : area.x1, 
+            max : area.x2, 
+            mode : 'time', 
+            labelsAngle : 45 },
+          yaxis : { 
+            min : area.y1, 
+            max : area.y2 }
+        };
+        var extendedOpts = _.extend(_.clone(options), opts);
+        graph = drawTimeGraph(extendedOpts, container);
+         //basic_time(document.getElementById('example'));
       });
             
       // When graph is clicked, draw the graph with default area.
-      Flotr.EventAdapter.observe(container, 'flotr:click', function () { graph = drawGraph(); });
+      Flotr.EventAdapter.observe(container, 'flotr:click', function () { graph = drawTimeGraph(options, container); });
+    }
+
+    function drawTimeGraph(opts, container) {
+      var graph;
+      var options = {
+        xaxis : {
+          mode : 'time', 
+          labelsAngle : 45
+        },
+        yaxis: {
+          min:0
+        },
+        selection : {
+          mode : 'x'
+        },
+        HtmlText : false,
+        title : 'Time'
+      };
+      
+      var o = Flotr._.extend(Flotr._.clone(opts) || {});
+      // Return a new graph.
+      return Flotr.draw(
+        container,
+        timeGraphData,
+        o
+      );
+
     }
 
     function basic(container, barData, barTicks, barLabels, maxNum) {
