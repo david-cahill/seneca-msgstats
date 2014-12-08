@@ -194,13 +194,11 @@
         drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
         $(this).parent().remove();
       } else {
-        console.log("timeGraphData = "+JSON.stringify(timeGraphData));
         for(var i = 0; i < timeGraphData.length; i++) {
           if(timeGraphData[i].label === patternUnchecked) {
             timeGraphData.splice(i,1);
           }
         }
-        console.log("timeGraphData 2 = "+JSON.stringify(timeGraphData));
         basic_time(document.getElementById('example'));
         $(this).parent().remove();
       }
@@ -254,10 +252,6 @@
       event.preventDefault();
     });
 
-    //loadSenecaPatternsList();
-    //$("#dateFrom").datepicker();
-    //$("#dateTo").datepicker();
-
     $("#chartType").change(function(event) {
       var val = $("#chartType").val();
       barTicks = [];
@@ -278,20 +272,6 @@
         break;
       }
     });
-
-    function loadSenecaPatternsList() {
-      $.ajax({
-        url:'/getPatterns',
-        type:'get',
-        dataType:'json'
-      }).success(function(data) {
-        createPatternCheckboxes(data);
-      });
-    }
-
-    function selectResult(result) {
-      console.log("**** Select Result called: " + result);
-    }
 
     function basic_time(container) {
       var
@@ -314,26 +294,6 @@
         HtmlText : false,
         title : 'Time'
       };
-
-      /*queryInfluxDBTime(pattern, time, function(err, response) {
-        for(var i = 0; i<response.length;i++) {
-                    //time, count
-          d1.push([ response[i][1], response[i][0] ]);
-        }
-        graph = drawTimeGraph(options, container); 
-      });*/
-
-      // Draw graph with default options, overwriting with passed options
-      /*function drawGraph (opts) {
-        // Clone the options, so the 'options' variable always keeps intact.
-        o = Flotr._.extend(Flotr._.clone(options), opts || {});
-        // Return a new graph.
-        return Flotr.draw(
-          container,
-          [ d1 ],
-          o
-        );
-      }*/
 
       graph = drawTimeGraph(options, container); 
 
