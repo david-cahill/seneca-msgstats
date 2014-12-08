@@ -101,7 +101,7 @@
                       //time, count
             tempData.push([ response[i][1], response[i][0] ]);
           }
-          timeGraphData.push({data:tempData, label:pattern+'-'+time});
+          timeGraphData.push({data:tempData, label:pattern+'-'+time, points:{show:true}, lines:{show:true}});
           basic_time(document.getElementById('example'));
         });
         addPatternBlock(pattern+'-'+time);
@@ -151,6 +151,13 @@
         yaxis: {
           min:0
         },
+        mouse: {
+          track:true,
+          trackFormatter: function(obj) {
+            return obj.y; 
+          },
+          relative: true 
+        },
         selection : {
           mode : 'x'
         },
@@ -178,6 +185,11 @@
             
       // When graph is clicked, draw the graph with default area.
       Flotr.EventAdapter.observe(container, 'flotr:click', function () { graph = drawTimeGraph(options, container); });
+
+    }
+
+    function getRealTimeData() {
+      console.log("getRealTimeData called");
     }
 
     function drawTimeGraph(opts, container) {
