@@ -228,18 +228,13 @@
           addPatternBlock(pattern);
         });
       } else {
-        var chartColors = ['black', 'red', 'blue', 'green', 'orange'];
-        var colorIndex = Math.floor(Math.random()*chartColors.length);
-        var color = chartColors[colorIndex];
-
-        chartColors.splice(colorIndex,1);
         queryInfluxDBTime(pattern, time, function(err, response) {
           var tempData = []
           for(var i = 0; i<response.length;i++) {
                       //time, count
             tempData.push([ response[i][1], response[i][0] ]);
           }
-          timeGraphData.push({data:tempData, label:pattern, color:color});
+          timeGraphData.push({data:tempData, label:pattern});
           basic_time(document.getElementById('example'));
           //drawTimeGraph(options, container, d1); 
         });
