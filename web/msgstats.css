@@ -1,12 +1,15 @@
 #chartType {
   margin-right:20px;
+  margin-top:7px;
 }
 
 #example {
-  width:100%;
+  width:1000px;
   height:400px;
+  margin-top:50px;
+  text-align: center;
+  margin:0 auto;
   margin-top:20px;
-  float:left;
 }
 
 #patterns_list {
@@ -31,15 +34,17 @@
 
 #patternsAutoComplete {
   position:absolute;
-  width:500px;
+  width:200px;
 }
 
 #patternsAdded {
-  position:relative;
-  width:400px;
-  height:200px;
-  float:left;
-  margin-left: 25px;
+    display: inline;
+    float: left;
+    height: auto;
+    margin-bottom: 0;
+    margin-top: 0;
+    padding-bottom: 15px;
+    position: absolute;
 }
 
 .pattern_block {
@@ -49,13 +54,12 @@
   width: 100px;
   float:left;
   margin-right:5px;
-  margin-top:5px;
 }
 
 .pattern_block_text {
   font-weight: normal;
   margin-left: 13px;
-  margin-top: 5px;
+  margin-top: 7px;
   text-align: center;
   width:60px;
   overflow: hidden;
@@ -63,10 +67,10 @@
 
 .pattern_block_delete {
   float: right;
-  height: 20px;
+  height: 15px;
   margin-right: 5px;
-  margin-top: 5px;
-  width: 20px;
+  margin-top: 10px;
+  width: 15px;
 }
 
 .pattern_block_delete:hover{
