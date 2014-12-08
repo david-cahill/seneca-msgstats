@@ -5,76 +5,8 @@
   var seneca = root.seneca
   var prefix = (seneca.config.msgstats ? seneca.config.msgstats.prefix : null ) || '/msgstats'
   var adminprefix = (seneca.config.admin ? seneca.config.admin.prefix : null ) || '/admin'
-  var chartData;
-  var data;
   var selectedPatterns = [];
   var timeGraphData = [];
-
-  function getData(cb) {
-    var result = [];
-    $.ajax({
-      url: "/influxdb/getData?fieldName=*",
-      type:'get',
-      dataType:'json'
-    }).success(function(data) {
-        var response = parseInfluxData(data);
-        for(var i = 0; i < response.length; i++) {
-          var roleData = [];
-          var pattern  = response[i].pattern;
-          var count = response[i].count;
-          var time = response[i].time
-          roleData.push(pattern); 
-          roleData.push(count);
-          result.push(roleData);
-        }
-      cb(null,result);
-    })
-  }
-
-  function getTimeData(cb) {
-    var result = [];
-    $.ajax({
-      url: "/influxdb/getData?fieldName=*",
-      type:'get',
-      dataType:'json'
-    }).success(function(data) {
-        var response = parseInfluxTimeData(data);
-        for(var i = 0; i < response.length; i++) {
-          var roleData = [];
-          var time = response[i].time;
-          var count = response[i].count;
-          roleData.push(time); 
-          roleData.push(count);
-          result.push(roleData);
-        }
-      cb(null,result);
-    })
-  }
-
-  function queryInfluxDB(pattern,time,cb) {
-    var result = [];
-    $.ajax({
-      url: "/influxdb/queryInflux",
-      type: 'get',
-      data: {actions:pattern,type:'normal',time:time},
-      dataType:'json'
-    }).success(function(data) {
-      if(data.length > 0) {
-        var response = parseInfluxData(data);
-        for(var i = 0; i < response.length; i++) {
-          var roleData = [];
-          var pattern  = response[i].pattern;
-          var count = response[i].count;
-          var time = response[i].time;
-          roleData.push(pattern); 
-          roleData.push(count);
-          roleData.push(time);
-          result.push(roleData);
-        }
-        cb(null,result)
-      }
-    }); 
-  }
 
   function queryInfluxDBTime(pattern, time, cb) {
     var result = [];
@@ -99,36 +31,6 @@
       }
       cb(null,result)
     }); 
-  }
-
-  function parseInfluxData(data) {
-    if(data.length > 0) {
-      var columns = data[0].columns;
-      var points  = data[0].points;
-      var patternIndex = columns.indexOf("pattern");
-  
-      var result = [];
-      var count = 1;
-      var countedRoles = [];
-
-      for(var i = 0; i<points.length; i++) {
-        var containsRole = _.contains(countedRoles,points[i][patternIndex]);
-        if(!containsRole) {
-          result.push({pattern:points[i][patternIndex],
-                       count:count
-                      });
-          countedRoles.push(points[i][patternIndex]);
-        } else {
-
-          for(var j = 0; j < result.length; j++) {
-            if(result[j].pattern === points[i][patternIndex]) {
-              result[j].count++;
-            }
-          }
-        }
-      }
-      return result;
-    }
   }
 
   function parseInfluxTimeData(data) {
@@ -160,7 +62,7 @@
     var counter = 0;
 
     angularLoad.loadScript('/msgstats/flotr2.min.js').then(function() {
-      basic(document.getElementById("example"),[],[],[],0);
+      basic_time(document.getElementById("example"));
     }).catch(function() {
       console.log("script load error");
     });
@@ -174,26 +76,7 @@
       var chartType = $("#chartType").val();
       var time      = $('#dateRange').val();
       var elementRemoved = false;
-      if(chartType === 'actionCount') {
-        for(var i = barData.length-1; i >= 0; i--) {
-          if(barTicks[i][1] === patternUnchecked) {
-            barData.splice(i,1);
-            barTicks.splice(i,1);
-            barLabels.splice(i,1);
-            elementRemoved = true;
-          }
-        }
-        if(elementRemoved) {
-          for(var i = 0; i < barData.length; i++) {
-            barData[i][0] = i;
-            barTicks[i][0] = i;
-            barLabels[i][0] = i;
-          }
-          counter = barData.length;
-        }
-        drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
-        $(this).parent().remove();
-      } else {
+      if(chartType === 'timeCount') {
         for(var i = 0; i < timeGraphData.length; i++) {
           if(timeGraphData[i].label === patternUnchecked) {
             timeGraphData.splice(i,1);
@@ -211,33 +94,17 @@
       selectedPatterns.push(pattern);
       var chartType = $("#chartType").val();
       var time      = $('#dateRange').val();
-      if(chartType === 'actionCount') {
-        queryInfluxDB(pattern, time, function(err, response) {
-          for(var i = 0; i<response.length;i++) {
-            barTicks.push([ counter, response[i][0] ]);
-            var intvalue = response[i][1];
-            intValues.push(intvalue);
-            barData.push([ counter, intvalue]);
-            barLabels.push([ counter, intvalue + '<br />'+ response[i][0] ]);
-            counter++;
-          }
-          maxNum = _.max(intValues);
-          drawBars(document.getElementById('example'), barData, barTicks, barLabels, maxNum);
-          addPatternBlock(pattern);
-        });
-      } else {
+      if(chartType === 'timeCount') {
         queryInfluxDBTime(pattern, time, function(err, response) {
           var tempData = []
           for(var i = 0; i<response.length;i++) {
                       //time, count
             tempData.push([ response[i][1], response[i][0] ]);
           }
-          timeGraphData.push({data:tempData, label:pattern});
+          timeGraphData.push({data:tempData, label:pattern+'-'+time});
           basic_time(document.getElementById('example'));
-          //drawTimeGraph(options, container, d1); 
         });
-
-        addPatternBlock(pattern);
+        addPatternBlock(pattern+'-'+time);
       }
     }
 
@@ -263,10 +130,6 @@
        var time = $('#dateRange').val();
       $(":checkbox").prop('checked', false);
       switch (val) {
-        case 'actionCount':
-        $("#example").show();
-        basic(document.getElementById("example"),[],[],[],0);
-        break;
         case 'timeCount':
         basic_time(document.getElementById("example"));
         break;
@@ -311,7 +174,6 @@
         };
         var extendedOpts = _.extend(_.clone(options), opts);
         graph = drawTimeGraph(extendedOpts, container);
-         //basic_time(document.getElementById('example'));
       });
             
       // When graph is clicked, draw the graph with default area.
@@ -341,59 +203,6 @@
         container,
         timeGraphData,
         o
-      );
-
-    }
-
-    function basic(container, barData, barTicks, barLabels, maxNum) {
-      drawBars(container, barData,  barTicks, barLabels, maxNum);                           
-    }
-
-    function drawBars(container, data, barTicks, barlabels, maxNum) {
-      // Draw Graph
-      Flotr.draw(
-        container,
-        [data],
-        {
-          colors: ['#EF5205'],
-          htmlText: true,
-          fontSize: 25,
-          grid: {
-            outlineWidth: 1,
-            outline: 'ws',
-            horizontalLines: true,
-            verticalLines: false
-          },
-          bars: {
-            show: true,
-            horizontal:false,
-            shadowSize: 0,
-            barWidth: 0.5,
-            fillOpacity: 1
-          },
-          mouse: {
-            track: true,
-            relative: true,
-            trackFormatter: function (pos) {
-              var ret;
-              $.each(barlabels, function (k, v) {
-                  if (v[0] == pos.x) {
-                      ret = v[1];
-                  };
-              });
-              return ret;
-            }
-          },
-          xaxis: {
-            ticks: barTicks
-          },
-          yaxis: {
-            min: 0,
-            max: maxNum,
-            margin: true,
-            tickDecimals: 0
-          }
-        }
       );
     }
   }
