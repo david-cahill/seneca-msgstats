@@ -8,6 +8,7 @@
   height:400px;
   margin-top:50px;
   text-align: center;
+  position:absolute;
   margin:0 auto;
   margin-top:20px;
 }
@@ -45,23 +46,26 @@
     margin-top: 0;
     padding-bottom: 15px;
     position: absolute;
+    width:700px;
 }
 
 .pattern_block {
   background-color: DeepSkyBlue;
   border-radius: 5px;
   height: 35px;
-  width: 100px;
+  width: auto;
   float:left;
-  margin-right:5px;
+  margin-right:2px;
+  margin-top:2px;
 }
 
 .pattern_block_text {
   font-weight: normal;
-  margin-left: 13px;
+  margin-left: 10px;
+  margin-right:5px;
   margin-top: 7px;
   text-align: center;
-  width:60px;
+  width:auto;
   overflow: hidden;
 }
 

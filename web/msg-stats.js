@@ -7,30 +7,25 @@
   var adminprefix = (seneca.config.admin ? seneca.config.admin.prefix : null ) || '/admin'
   var selectedPatterns = [];
   var timeGraphData = [];
+  var http;
 
   function queryInfluxDBTime(pattern, time, cb) {
     var result = [];
-    $.ajax({
-      url: "/influxdb/queryInflux",
-      type: 'get',
-      data: {actions:pattern,type:'time', time:time},
-      dataType:'json'
-    }).success(function(data) {
+    http({url:'/influxdb/queryInflux', method:'get', params:{actions:pattern,type:'time', time:time}}).
+    success(function(data, status, headers, config) {
       if(data.length > 0) {
         var response = parseInfluxTimeData(data);
         for(var i = 0; i < response.length; i++) {
           var roleData = [];
-          //var pattern  = response[i].pattern;
           var count = response[i].count;
           var time = response[i].time;
-          //roleData.push(pattern); 
           roleData.push(count);
           roleData.push(time);
           result.push(roleData);
         }
       }
       cb(null,result)
-    }); 
+    });
   }
 
   function parseInfluxTimeData(data) {
@@ -70,6 +65,7 @@
     //angularLoad.loadScript('https://code.jquery.com/ui/1.11.2/jquery-ui.js');
     angularLoad.loadCSS('/msgstats/msgstats.css');
     angularLoad.loadCSS('/msgstats/angucomplete.css');
+    angularLoad.loadCSS('/msgstats/bootstrap.min.css');
 
     $(document).on('click', '.pattern_block_delete', function() {
       var patternUnchecked = $(this).attr('alt');
@@ -224,7 +220,7 @@
       },
       controller: msgStatsController,
       link: function ($scope, element, attrs) {
-
+        http = $http;
       },
       templateUrl:prefix+"/_msg_stats_template.html"
     }
