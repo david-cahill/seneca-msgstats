@@ -10,8 +10,7 @@ module.exports = function( options ) {
   var plugin = 'msgstats'
 
   options = seneca.util.deepextend({
-    pin:'',
-    format:['role'],
+    pin:{},
     prefix:'/msgstats/',
     contentprefix:'/msgstats',
     influxOpts:{}
@@ -26,8 +25,6 @@ module.exports = function( options ) {
   };
 
   function captureAllMessages(args) {
-    //Check seneca args and look for capture fields in options.format.
-    var captureFields = options.format;
     var point = {};
     var meta  = args.meta$;
     point['pattern'] = meta.pattern;
@@ -38,8 +35,8 @@ module.exports = function( options ) {
     }
   }
 
-  //Capture all actions
-  seneca.sub({}, captureAllMessages);
+  //Capture actions
+  seneca.sub(options.pin, captureAllMessages);
 
   //-----API Section------//
   var data;
