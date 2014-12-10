@@ -65,7 +65,6 @@
     //angularLoad.loadScript('https://code.jquery.com/ui/1.11.2/jquery-ui.js');
     angularLoad.loadCSS('/msgstats/msgstats.css');
     angularLoad.loadCSS('/msgstats/angucomplete.css');
-    angularLoad.loadCSS('/msgstats/bootstrap.min.css');
 
     $(document).on('click', '.pattern_block_delete', function() {
       var patternUnchecked = $(this).attr('alt');
