@@ -1,6 +1,6 @@
 {
   "name": "seneca-msgstats",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Seneca message statistics.",
   "main": "msgstats.js",
   "scripts": {
