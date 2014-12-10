@@ -28,7 +28,6 @@ module.exports = function( options ) {
     var point = {};
     var meta  = args.meta$;
     point['pattern'] = meta.pattern;
-
     if(meta.pattern.indexOf('role:collector') === -1) {
       seneca.act({role:'collector', cmd:'send', point:point, options:options}, function(err, result) {
       });

@@ -8,9 +8,7 @@
   height:400px;
   margin-top:50px;
   text-align: center;
-  position:absolute;
-  margin:0 auto;
-  margin-top:20px;
+  margin-top:0px;
 }
 
 #patterns_list {
@@ -49,7 +47,7 @@
 }
 
 .pattern_block {
-  background-color: DeepSkyBlue;
+  background-color:#428bca;
   border-radius: 5px;
   height: 35px;
   width: auto;
@@ -66,6 +64,7 @@
   text-align: center;
   width:auto;
   overflow: hidden;
+  color:white;
 }
 
 .pattern_block_delete {
@@ -84,9 +83,13 @@
   margin-right:20px;
 }
 
+#mainContainer {
+
+}
+
 #controlsContainer {
   width:100%;
-  height:auto;
+  margin-bottom:40px;
 }
 
 #patternsContainer {

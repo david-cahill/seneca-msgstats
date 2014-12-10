@@ -1,26 +1,28 @@
-<div id="controlsContainer">
-       <select id="chartType">
-       	<option value="timeCount">Time Count</option>
-       </select>
-       <select id="dateRange">
-       	<option value="5m">Last 5m</option>
-       	<option value="1h">Last 1h</option>
-       	<option value="24h">Last 24h</option>
-       	<option value="all">All</option>
-       </select>
-       <div id="patternsAdded">
-              <angucomplete id="patternsAutoComplete"
-                            placeholder="Search Patterns"
-                            pause="400"
-                            selectedobject="patternObj"
-                            url="/searchPatterns?s="
-                            datafield="patterns"
-                            titlefield="pattern"
-                            inputclass="form-control form-control-small"/>
+<div id="mainContainer">
+       <div id="controlsContainer">
+              <select id="chartType">
+              	<option value="timeCount">Time Count</option>
+              </select>
+              <select id="dateRange">
+              	<option value="5m">Last 5m</option>
+              	<option value="1h">Last 1h</option>
+              	<option value="24h">Last 24h</option>
+              	<option value="all">All</option>
+              </select>
+              <div id="patternsAdded">
+                     <angucomplete id="patternsAutoComplete"
+                                   placeholder="Search Patterns"
+                                   pause="400"
+                                   selectedobject="patternObj"
+                                   url="/searchPatterns?s="
+                                   datafield="patterns"
+                                   titlefield="pattern"
+                                   inputclass="form-control form-control-small"/>
+              </div>
        </div>
-</div>
-<div id="patternsContainer">
-       <div id="example"></div>
+       <div id="patternsContainer">
+              <div id="example"></div>
+       </div>
 </div>
 
 
