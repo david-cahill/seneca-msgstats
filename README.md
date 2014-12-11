@@ -5,9 +5,9 @@
 This module is a plugin for the [Seneca
 framework](http://senecajs.org). It provides a message throughput statistics.
 
-Current Version: 0.1.0
+Current Version: 0.1.2
 
-Tested on: Seneca 0.5.21, Node 0.10.31
+Tested on: Seneca 0.6.0, Node 0.10.33
 
 
 ### Quick example
