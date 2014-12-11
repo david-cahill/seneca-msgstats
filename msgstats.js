@@ -28,6 +28,7 @@ module.exports = function( options ) {
     var point = {};
     var meta  = args.meta$;
     point['pattern'] = meta.pattern;
+
     if(meta.pattern.indexOf('role:collector') === -1) {
       seneca.act({role:'collector', cmd:'send', point:point, options:options}, function(err, result) {
       });
@@ -106,7 +107,7 @@ module.exports = function( options ) {
           res.send(response);
         });
     } else if(0 == req.url.indexOf('/searchPatterns')) {
-        var searchTerm = req.param('s');
+        var searchTerm = req.param('s'); 
         getSenecaPatterns(function(err, response) {
           parseSenecaPatterns(response, searchTerm, function(err, response) {
               res.send(response);
