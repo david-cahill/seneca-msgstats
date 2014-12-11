@@ -1,6 +1,5 @@
 #chartType {
-  margin-right:20px;
-  margin-top:7px;
+  
 }
 
 #example {
@@ -8,6 +7,7 @@
   height:400px;
   text-align: center;
   margin:0 auto;
+  margin-top:20px;
 }
 
 #patterns_list {
@@ -31,8 +31,8 @@
 }
 
 #patternsAutoComplete {
-  position:absolute;
-  width:200px;
+  float:left;
+  margin-left:0px;
 }
 
 #patternsAdded {
@@ -42,7 +42,7 @@
     margin-bottom: 0;
     margin-top: 0;
     position: absolute;
-    width:700px;
+    width:950px;
 }
 
 .pattern_block {
@@ -79,7 +79,6 @@
 }
 
 #dateRange {
-  margin-right:20px;
 }
 
 #mainContainer {
@@ -87,11 +86,18 @@
 }
 
 #controlsContainer {
-  width:100%;
-  margin-bottom:40px;
+  width:210px;
+  margin-bottom:10px;
+  margin-top:5px;
+  float:left;
 }
 
 #patternsContainer {
   width:100%;
   height:100%;
+  float:left;
+}
+
+#searchPatterns {
+
 }
