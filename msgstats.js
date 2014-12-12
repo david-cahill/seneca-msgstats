@@ -29,7 +29,7 @@ module.exports = function( options ) {
     var meta  = args.meta$;
     point['pattern'] = meta.pattern;
 
-    if(meta.pattern.indexOf('role:collector') === -1) {
+    if(meta.pattern.indexOf('role:collector') === -1 && meta.entry) {
       seneca.act({role:'collector', cmd:'send', point:point, options:options}, function(err, result) {
       });
     }
